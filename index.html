@@ -1,17 +1,39 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<title>Women in Mathematics Birthdays</title>
-		<link rel="stylesheet" type="text/css" href="style.css"></style>
-		<script src="wikidata.js"></script>
-	</head>
-	<body>
-	<h1>&#x1F389; <input type="date" id="datePicker">&#x1F382;</h1>
 
-	<div id="container"></div>
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-	<p>
-		Inspired by <a href="https://twitter.com/monsoon0/status/1290580248212299778">this Twitter thread</a>
-	</p>
-	</body>
+	<title>Women in Mathematics Birthdays</title>
+
+	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-+0n0xVW2eSR5OomGNYDnhzAbDsOXxcvSN1TPprVMTNDbiYZCxYbOOl7+AMvyTG2x" crossorigin="anonymous">
+	<script src="wikidata.js"></script>
+</head>
+
+<body>
+	<div class="container">
+		<div class="row mt-3">
+			<div class="col">
+				<div class="input-group input-group-lg">
+					<span class="input-group-text">&#x1F389;</span>
+					<input type="date" class="form-control" id="datePicker">
+					<span class="input-group-text">&#x1F382;</span>
+				</div>
+			</div>
+		</div>
+
+		<div class="row row-cols-1 row-cols-md-3 g-3 mt-3" id="cardHolder"></div>
+		<div class="row mt-3">
+			<div class="col">
+				<p class="text-center">
+					Inspired by <a href="https://twitter.com/monsoon0/status/1290580248212299778">this Twitter thread</a>
+				</p>
+			</div>
+		</div>
+	</div>
+
+
+</body>
+
 </html>

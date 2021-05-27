@@ -1,29 +1,44 @@
-// https://w.wiki/Yn7
+'use strict';
+
+// https://w.wiki/3PsE
 document.addEventListener("DOMContentLoaded", event => {
 	datePicker = document.getElementById("datePicker");
 
 	// set datepicker default to today
 	datePicker.valueAsDate = new Date();
 
-	datePicker.onchange = function() {
-		dateValue = new Date(Date.parse(this.value));
-		dateStr = dateValue.getFullYear() + '-' + (dateValue.getUTCMonth()+1) + '-' + dateValue.getUTCDate()
+	datePicker.onchange = function () {
+		let date = new Date(Date.parse(this.value));
 
-		let query = `SELECT ?mathematician ?mathematicianLabel ?dob ?sex ?image WHERE {?mathematician wdt:P106 wd:Q170790; wdt:P569 ?dob; OPTIONAL {?mathematician wdt:P21 ?sex.} OPTIONAL {?mathematician wdt:P18 ?image.} FILTER(MONTH("${dateStr}"^^xsd:dateTime) = MONTH(?dob) && DAY("${dateStr}"^^xsd:dateTime) = DAY(?dob) && ?sex = wd:Q6581072). SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". } } ORDER BY ASC(?dob)`;
+		const query = `SELECT ?mathematician ?mathematicianLabel (SAMPLE(?dob1) AS ?dob) (SAMPLE(?img1) AS ?img) (GROUP_CONCAT(?fieldLabel; SEPARATOR = ", ") AS ?fields) WHERE {
+			?mathematician wdt:P106 wd:Q170790;
+				wdt:P21 wd:Q6581072;
+				wdt:P569 ?dob.
+			OPTIONAL { ?mathematician wdt:P101 ?field. }
+			OPTIONAL { ?mathematician wdt:P18 ?img. }
+			FILTER((${date.getMonth() + 1}  = (MONTH(?dob))) && (${date.getDate() + 1}  = (DAY(?dob))))
+			SERVICE wikibase:label {
+				bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en".
+				?mathematician rdfs:label ?mathematicianLabel.
+				?field rdfs:label ?fieldLabel.
+			}
+		}
+		GROUP BY ?mathematician ?mathematicianLabel ?dob ?img
+		ORDER BY (?dob)`
 
 		let encoded = encodeURI(query).replace(/%7B/gi, "{").replace(/%7D/gi, "}").replace(/&/gi, "%26")
 
 		let requestSPARQL = new Request("https://query.wikidata.org/sparql", {
 			method: "POST",
-			body: "query="+encoded,
+			body: "query=" + encoded,
 			headers: {
 				"accept": "application/sparql-results+json",
 				"content-type": "application/x-www-form-urlencoded"
 			}
 		});
 
-		let container = document.getElementById("container");
-		obtainAndPopulate(requestSPARQL, container)
+		let cardHolder = document.getElementById("cardHolder");
+		obtainAndPopulate(requestSPARQL, cardHolder)
 	}
 
 	// force an onchange so we obtain data for today by default
@@ -31,61 +46,71 @@ document.addEventListener("DOMContentLoaded", event => {
 })
 
 
-function obtainAndPopulate(request, container) {
+function obtainAndPopulate(request, cardHolder) {
 	// empty container before repopulation
-	container.innerHTML = "";
+	cardHolder.innerHTML = "";
 
 	fetch(request).then(response => {
 		if (!response.ok) {
 			throw new Error(response)
 		}
 		response.json().then(json => {
-			// console.log(json)
-
-			// build the div for each mathematician
+			// build the card for each mathematician
 			for (let i = 0; i < json.results.bindings.length; i++) {
-				result = json.results.bindings[i]
+				let result = json.results.bindings[i];
 
-				let div = document.createElement("div");
-				div.className = "mathematician";
+				let col = document.createElement("div");
+				col.className = "col";
 
-				if (result.image != undefined) {
-					let imgHolder = document.createElement("div");
+				let card = document.createElement("div");
+				card.className = "card";
+
+				let name = document.createElement("h5");
+				name.className = "card-header text-center";
+				let link = "https://wikipedia.org/wiki/" + result.mathematicianLabel.value.replace(/ /gi, "_");
+				name.innerHTML = "<a href=" + link + ">" + result.mathematicianLabel.value + "</a>";
+				card.appendChild(name);
+
+				let body = document.createElement("div")
+				body.className = "card-body"
+
+				if (result.img != undefined) {
 					let img = document.createElement("img");
-					img.className = "img"
-					img.src = result.image.value;
-					imgHolder.appendChild(img);
-					div.appendChild(imgHolder);
+					img.className = "card-img-top img-fluid rounded";
+					img.src = result.img.value;
+
+					body.appendChild(img);
+					card.appendChild(body);
 				}
 
-				let name = document.createElement("div");
-				name.className = "descriptiveText";
-				let link = "https://wikipedia.org/wiki/" + result.mathematicianLabel.value.replace(/ /gi, "_")
+				let text = document.createElement("div")
+				text.className = "card-text text-capitalize text-center"
+				text.innerHTML = result.fields.value.split(",")
+				body.appendChild(text)
 
-				name.innerHTML = "<a href="+link+">"+result.mathematicianLabel.value+"</a>";
-				div.appendChild(name);
-
-				let date = new Date(Date.parse(result.dob.value))
-				fmtDate = date.getMonth()+1 + '-' + date.getUTCDate() + '-' + date.getFullYear()
+				let date = new Date(Date.parse(result.dob.value));
+				let fmtDate = date.getMonth() + 1 + '-' + date.getUTCDate() + '-' + date.getFullYear();
 
 				let birthday = document.createElement("div");
-				birthday.className = "descriptiveText";
+				birthday.className = "card-footer text-center";
 				birthday.innerHTML = fmtDate;
-				div.appendChild(birthday);
+				card.appendChild(birthday);
 
-				container.appendChild(div)
+				col.appendChild(card)
+				cardHolder.appendChild(col);
 			}
 		})
 	})
 }
 
 // performs a HEAD request on a link and determines if it is broken (returns 404)
-function isBroken(link) {
+function isBroken(ids) {
+	let l = `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${ids.join('|')}&props=sitelinks/urls&sitefilter=enwiki`;
 	fetch(link, {
-		method: "HEAD",
+		method: "GET",
 		redirect: "follow",
 		// mode: "no-cors"
 	})
-		.then(response => console.log(response.status))
-		.catch(error => {console.error('error:', error)})
+		.then(response => console.log(response.body))
+		.catch(error => { console.error('error:', error) })
 }
