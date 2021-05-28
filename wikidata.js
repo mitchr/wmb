@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", event => {
 	datePicker.valueAsDate = new Date();
 
 	datePicker.onchange = function () {
-		let date = new Date(Date.parse(this.value));
+		let date = this.valueAsDate;
 
 		const query = `SELECT ?mathematician ?mathematicianLabel (SAMPLE(?givenLabel) as ?given) (SAMPLE(?familyLabel) as ?family) ?dob ?img (GROUP_CONCAT(?fieldLabel; SEPARATOR = ",") AS ?fields) WHERE {
 			?mathematician wdt:P106 wd:Q170790;
@@ -30,16 +30,16 @@ document.addEventListener("DOMContentLoaded", event => {
 		GROUP BY ?mathematician ?mathematicianLabel ?dob ?img
 		ORDER BY (?dob)`
 
-		let encoded = encodeURI(query).replace(/%7B/gi, "{").replace(/%7D/gi, "}").replace(/&/gi, "%26")
+		let encoded = encodeURI(query).replace(/%7B/gi, "{").replace(/%7D/gi, "}").replace(/&/gi, "%26");
 
 		let requestSPARQL = new Request(`https://query.wikidata.org/sparql?format=json&query=${encoded}`, { method: "GET", });
 
 		let cardHolder = document.getElementById("cardHolder");
-		obtainAndPopulate(requestSPARQL, cardHolder)
+		obtainAndPopulate(requestSPARQL, cardHolder);
 	}
 
 	// force an onchange so we obtain data for today by default
-	datePicker.onchange()
+	datePicker.onchange();
 })
 
 
@@ -47,17 +47,17 @@ async function obtainAndPopulate(request, cardHolder) {
 	// empty container before repopulation
 	cardHolder.innerHTML = "";
 
-	let json = await fetch(request).then(r => r.json())
+	let json = await fetch(request).then(r => r.json());
 
 	// build the card for each mathematician
 	let ids = json.results.bindings.map(e => extractEntityId(e.mathematician.value));
-	let urls = await getWikipediaUrls(ids)
+	let urls = await getWikipediaUrls(ids);
 
 	json.results.bindings.forEach((e, i) => {
-		let card = constructCard(e)
+		let card = constructCard(e);
 
-		let sanitizedName = extractName(e)
-		let header = card.querySelector(".card-header")
+		let sanitizedName = extractName(e);
+		let header = card.querySelector(".card-header");
 		if (urls[i] != undefined) {
 			header.innerHTML = `<a href=${urls[i]}>${sanitizedName}</a>`;
 		} else {
@@ -93,12 +93,12 @@ function constructCard(result) {
 		card.appendChild(body);
 	}
 
-	let text = document.createElement("div")
-	text.className = "card-text text-capitalize text-center"
-	text.innerHTML = result.fields.value.split(",").join(", ")
-	body.appendChild(text)
+	let text = document.createElement("div");
+	text.className = "card-text text-capitalize text-center";
+	text.innerHTML = result.fields.value.split(",").join(", ");
+	body.appendChild(text);
 
-	let date = new Date(Date.parse(result.dob.value));
+	let date = new Date(result.dob.value);
 	let fmtDate = date.getMonth() + 1 + '-' + date.getUTCDate() + '-' + date.getFullYear();
 
 	let birthday = document.createElement("div");
@@ -106,17 +106,17 @@ function constructCard(result) {
 	birthday.innerHTML = fmtDate;
 	card.appendChild(birthday);
 
-	col.appendChild(card)
-	return col
+	col.appendChild(card);
+	return col;
 }
 
 function extractName(person) {
-	let given = person?.given?.value
-	let family = person?.family?.value
+	let given = person?.given?.value;
+	let family = person?.family?.value;
 	if (given === undefined || family === undefined) {
-		return person.mathematicianLabel.value
+		return person.mathematicianLabel.value;
 	} else {
-		return given + " " + family
+		return given + " " + family;
 	}
 }
 
