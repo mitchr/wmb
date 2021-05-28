@@ -65,19 +65,20 @@ async function obtainAndPopulate(request, cardHolder) {
 	});
 	let urls = await getWikipediaUrls(ids)
 
-	for (let i = 0; i < json.results.bindings.length; i++) {
-		let card = constructCard(json.results.bindings[i])
+	json.results.bindings.forEach((e, i) => {
+		let card = constructCard(e)
 
-		let sanitizedName = extractName(json.results.bindings[i])
+		let sanitizedName = extractName(e)
 		let header = card.querySelector(".card-header")
 		if (urls[i] != undefined) {
-			header.innerHTML = "<a href=" + urls[i] + ">" + sanitizedName + "</a>";
+			header.innerHTML = `<a href=${urls[i]}>${sanitizedName}</a>`;
 		} else {
-			header.innerHTML = `<span>${sanitizedName}</span>`
+			header.innerHTML = `<span>${sanitizedName}</span>`;
 		}
+		header.innerHTML += ` <sup><a href="https://www.wikidata.org/wiki/${ids[i]}"><span class="badge bg-info">wikidata</span></a></sup>`
 
 		cardHolder.appendChild(card);
-	}
+	})
 }
 
 // returns a card html node
