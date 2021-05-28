@@ -50,62 +50,75 @@ document.addEventListener("DOMContentLoaded", event => {
 })
 
 
-function obtainAndPopulate(request, cardHolder) {
+async function obtainAndPopulate(request, cardHolder) {
 	// empty container before repopulation
 	cardHolder.innerHTML = "";
 
-	fetch(request).then(response => {
-		if (!response.ok) {
-			throw new Error(response)
+	let response = await fetch(request)
+	if (!response.ok) { throw new Error(response) }
+	let json = await response.json()
+
+	// build the card for each mathematician
+	let ids = [];
+	json.results.bindings.forEach(e => {
+		ids.push(extractEntityId(e.mathematician.value))
+	});
+	let urls = await getWikipediaUrls(ids)
+
+	for (let i = 0; i < json.results.bindings.length; i++) {
+		let card = constructCard(json.results.bindings[i])
+
+		let sanitizedName = extractName(json.results.bindings[i])
+		let header = card.querySelector(".card-header")
+		if (urls[i] != undefined) {
+			header.innerHTML = "<a href=" + urls[i] + ">" + sanitizedName + "</a>";
+		} else {
+			header.innerHTML = `<span>${sanitizedName}</span>`
 		}
-		response.json().then(json => {
-			// build the card for each mathematician
-			for (let i = 0; i < json.results.bindings.length; i++) {
-				let result = json.results.bindings[i];
 
-				let col = document.createElement("div");
-				col.className = "col";
+		cardHolder.appendChild(card);
+	}
+}
 
-				let card = document.createElement("div");
-				card.className = "card";
+// returns a card html node
+function constructCard(result) {
+	let col = document.createElement("div");
+	col.className = "col";
 
-				let sanitizedName = extractName(result)
-				let name = document.createElement("h5");
-				name.className = "card-header text-center";
-				let link = "https://wikipedia.org/wiki/" + sanitizedName.replace(/ /gi, "_");
-				name.innerHTML = "<a href=" + link + ">" + sanitizedName + "</a>";
-				card.appendChild(name);
+	let card = document.createElement("div");
+	card.className = "card";
 
-				let body = document.createElement("div")
-				body.className = "card-body"
+	let name = document.createElement("h5");
+	name.className = "card-header text-center";
+	card.appendChild(name);
 
-				if (result.img != undefined) {
-					let img = document.createElement("img");
-					img.className = "card-img-top img-fluid rounded";
-					img.src = result.img.value;
+	let body = document.createElement("div")
+	body.className = "card-body"
 
-					body.appendChild(img);
-					card.appendChild(body);
-				}
+	if (result.img != undefined) {
+		let img = document.createElement("img");
+		img.className = "card-img-top img-fluid rounded";
+		img.src = result.img.value;
 
-				let text = document.createElement("div")
-				text.className = "card-text text-capitalize text-center"
-				text.innerHTML = result.fields.value.split(",").join(", ")
-				body.appendChild(text)
+		body.appendChild(img);
+		card.appendChild(body);
+	}
 
-				let date = new Date(Date.parse(result.dob.value));
-				let fmtDate = date.getMonth() + 1 + '-' + date.getUTCDate() + '-' + date.getFullYear();
+	let text = document.createElement("div")
+	text.className = "card-text text-capitalize text-center"
+	text.innerHTML = result.fields.value.split(",").join(", ")
+	body.appendChild(text)
 
-				let birthday = document.createElement("div");
-				birthday.className = "card-footer text-center";
-				birthday.innerHTML = fmtDate;
-				card.appendChild(birthday);
+	let date = new Date(Date.parse(result.dob.value));
+	let fmtDate = date.getMonth() + 1 + '-' + date.getUTCDate() + '-' + date.getFullYear();
 
-				col.appendChild(card)
-				cardHolder.appendChild(col);
-			}
-		})
-	})
+	let birthday = document.createElement("div");
+	birthday.className = "card-footer text-center";
+	birthday.innerHTML = fmtDate;
+	card.appendChild(birthday);
+
+	col.appendChild(card)
+	return col
 }
 
 function extractName(person) {
@@ -118,13 +131,20 @@ function extractName(person) {
 	}
 }
 
-function isBroken(url) {
-	let l = `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${ids.join('|')}&props=sitelinks/urls&sitefilter=enwiki`;
-	fetch(link, {
-		method: "GET",
-		redirect: "follow",
-		// mode: "no-cors"
-	})
-		.then(response => console.log(response.body))
-		.catch(error => { console.error('error:', error) })
+function extractEntityId(url) {
+	let u = url.split("/")
+	return u[u.length - 1]
+}
+
+async function getWikipediaUrls(ids) {
+	let link = `https://www.wikidata.org/w/api.php?origin=*&format=json&action=wbgetentities&ids=${ids.join('|')}&props=sitelinks/urls&sitefilter=enwiki`;
+	let response = await fetch(link, { method: "GET", })
+	if (!response.ok) { throw new Error(response) }
+	let json = await response.json()
+
+	let urls = [];
+	for (let i = 0; i < ids.length; i++) {
+		urls.push(json.entities[ids[i]]?.sitelinks?.enwiki?.url)
+	}
+	return urls
 }
