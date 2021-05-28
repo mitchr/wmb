@@ -1,6 +1,6 @@
 'use strict';
 
-// https://w.wiki/3Psx
+// https://w.wiki/3Q9c
 document.addEventListener("DOMContentLoaded", event => {
 	datePicker = document.getElementById("datePicker");
 
@@ -10,12 +10,12 @@ document.addEventListener("DOMContentLoaded", event => {
 	datePicker.onchange = function () {
 		let date = this.valueAsDate;
 
-		const query = `SELECT ?mathematician ?mathematicianLabel (SAMPLE(?givenLabel) as ?given) (SAMPLE(?familyLabel) as ?family) ?dob ?img (GROUP_CONCAT(?fieldLabel; SEPARATOR = ",") AS ?fields) WHERE {
+		const query = `SELECT ?mathematician ?mathematicianLabel (SAMPLE(?givenLabel) AS ?given) (SAMPLE(?familyLabel) AS ?family) ?dob (SAMPLE(?i) AS ?img) (GROUP_CONCAT(?fieldLabel; SEPARATOR = ",") AS ?fields) WHERE {
 			?mathematician wdt:P106 wd:Q170790;
 				wdt:P21 wd:Q6581072;
 				wdt:P569 ?dob.
 			OPTIONAL { ?mathematician wdt:P101 ?field. }
-			OPTIONAL { ?mathematician wdt:P18 ?img. }
+			OPTIONAL { ?mathematician wdt:P18 ?i. }
 			OPTIONAL { ?mathematician wdt:P735 ?given. }
 			OPTIONAL { ?mathematician wdt:P734 ?family. }
 			FILTER((${date.getMonth() + 1}  = (MONTH(?dob))) && (${date.getDate() + 1}  = (DAY(?dob))))
@@ -69,7 +69,7 @@ async function obtainAndPopulate(request, cardHolder) {
 	})
 }
 
-// returns a card html node
+// returns a col html node that contains a card
 function constructCard(result) {
 	let col = document.createElement("div");
 	col.className = "col";
@@ -77,9 +77,12 @@ function constructCard(result) {
 	let card = document.createElement("div");
 	card.className = "card";
 
-	let name = document.createElement("h5");
-	name.className = "card-header text-center";
-	card.appendChild(name);
+	// create header here. it doesn't get set until we verify that this 
+	// person has a valid wikipedia page, but it needs to be added to the 
+	// card's childNodes before anything else or it gets misplaced
+	let header = document.createElement("h5");
+	header.className = "card-header text-center";
+	card.appendChild(header);
 
 	let body = document.createElement("div")
 	body.className = "card-body"
@@ -88,22 +91,19 @@ function constructCard(result) {
 		let img = document.createElement("img");
 		img.className = "card-img-top img-fluid rounded";
 		img.src = result.img.value;
-
 		body.appendChild(img);
-		card.appendChild(body);
 	}
 
 	let text = document.createElement("div");
 	text.className = "card-text text-capitalize text-center";
-	text.innerHTML = result.fields.value.split(",").join(", ");
+	text.innerHTML = result?.fields?.value.split(",").join(", ");
 	body.appendChild(text);
+	card.appendChild(body);
 
 	let date = new Date(result.dob.value);
-	let fmtDate = date.getMonth() + 1 + '-' + date.getUTCDate() + '-' + date.getFullYear();
-
 	let birthday = document.createElement("div");
 	birthday.className = "card-footer text-center";
-	birthday.innerHTML = fmtDate;
+	birthday.innerHTML = date.getMonth() + 1 + '-' + date.getUTCDate() + '-' + date.getFullYear();
 	card.appendChild(birthday);
 
 	col.appendChild(card);
