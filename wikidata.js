@@ -32,14 +32,7 @@ document.addEventListener("DOMContentLoaded", event => {
 
 		let encoded = encodeURI(query).replace(/%7B/gi, "{").replace(/%7D/gi, "}").replace(/&/gi, "%26")
 
-		let requestSPARQL = new Request("https://query.wikidata.org/sparql", {
-			method: "POST",
-			body: "query=" + encoded,
-			headers: {
-				"accept": "application/sparql-results+json",
-				"content-type": "application/x-www-form-urlencoded"
-			}
-		});
+		let requestSPARQL = new Request(`https://query.wikidata.org/sparql?format=json&query=${encoded}`, { method: "GET", });
 
 		let cardHolder = document.getElementById("cardHolder");
 		obtainAndPopulate(requestSPARQL, cardHolder)
