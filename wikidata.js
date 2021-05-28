@@ -54,15 +54,10 @@ async function obtainAndPopulate(request, cardHolder) {
 	// empty container before repopulation
 	cardHolder.innerHTML = "";
 
-	let response = await fetch(request)
-	if (!response.ok) { throw new Error(response) }
-	let json = await response.json()
+	let json = await fetch(request).then(r => r.json())
 
 	// build the card for each mathematician
-	let ids = [];
-	json.results.bindings.forEach(e => {
-		ids.push(extractEntityId(e.mathematician.value))
-	});
+	let ids = json.results.bindings.map(e => extractEntityId(e.mathematician.value));
 	let urls = await getWikipediaUrls(ids)
 
 	json.results.bindings.forEach((e, i) => {
@@ -132,20 +127,19 @@ function extractName(person) {
 	}
 }
 
-function extractEntityId(url) {
-	let u = url.split("/")
-	return u[u.length - 1]
-}
+function extractEntityId(url) { return url.split("/").pop() }
 
 async function getWikipediaUrls(ids) {
 	let link = `https://www.wikidata.org/w/api.php?origin=*&format=json&action=wbgetentities&ids=${ids.join('|')}&props=sitelinks/urls&sitefilter=enwiki`;
-	let response = await fetch(link, { method: "GET", })
-	if (!response.ok) { throw new Error(response) }
-	let json = await response.json()
 
-	let urls = [];
-	for (let i = 0; i < ids.length; i++) {
-		urls.push(json.entities[ids[i]]?.sitelinks?.enwiki?.url)
-	}
-	return urls
+	return fetch(link, { method: "GET", })
+		.then(resp => resp.json())
+		.then(json => {
+			// wrap urls in new Promise so we can await
+			return new Promise(resolve => {
+				let urls = ids.map(e => json.entities[e]?.sitelinks?.enwiki?.url)
+				resolve(urls)
+			})
+		})
+		.catch(e => console.error(e))
 }
