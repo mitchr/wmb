@@ -1,6 +1,6 @@
 'use strict';
 
-// https://w.wiki/3PsE
+// https://w.wiki/3Psx
 document.addEventListener("DOMContentLoaded", event => {
 	datePicker = document.getElementById("datePicker");
 
@@ -10,16 +10,20 @@ document.addEventListener("DOMContentLoaded", event => {
 	datePicker.onchange = function () {
 		let date = new Date(Date.parse(this.value));
 
-		const query = `SELECT ?mathematician ?mathematicianLabel (SAMPLE(?dob1) AS ?dob) (SAMPLE(?img1) AS ?img) (GROUP_CONCAT(?fieldLabel; SEPARATOR = ", ") AS ?fields) WHERE {
+		const query = `SELECT ?mathematician ?mathematicianLabel (SAMPLE(?givenLabel) as ?given) (SAMPLE(?familyLabel) as ?family) ?dob ?img (GROUP_CONCAT(?fieldLabel; SEPARATOR = ",") AS ?fields) WHERE {
 			?mathematician wdt:P106 wd:Q170790;
 				wdt:P21 wd:Q6581072;
 				wdt:P569 ?dob.
 			OPTIONAL { ?mathematician wdt:P101 ?field. }
 			OPTIONAL { ?mathematician wdt:P18 ?img. }
+			OPTIONAL { ?mathematician wdt:P735 ?given. }
+			OPTIONAL { ?mathematician wdt:P734 ?family. }
 			FILTER((${date.getMonth() + 1}  = (MONTH(?dob))) && (${date.getDate() + 1}  = (DAY(?dob))))
 			SERVICE wikibase:label {
 				bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en".
 				?mathematician rdfs:label ?mathematicianLabel.
+				?given rdfs:label ?givenLabel.
+				?family rdfs:label ?familyLabel.
 				?field rdfs:label ?fieldLabel.
 			}
 		}
@@ -65,10 +69,11 @@ function obtainAndPopulate(request, cardHolder) {
 				let card = document.createElement("div");
 				card.className = "card";
 
+				let sanitizedName = extractName(result)
 				let name = document.createElement("h5");
 				name.className = "card-header text-center";
-				let link = "https://wikipedia.org/wiki/" + result.mathematicianLabel.value.replace(/ /gi, "_");
-				name.innerHTML = "<a href=" + link + ">" + result.mathematicianLabel.value + "</a>";
+				let link = "https://wikipedia.org/wiki/" + sanitizedName.replace(/ /gi, "_");
+				name.innerHTML = "<a href=" + link + ">" + sanitizedName + "</a>";
 				card.appendChild(name);
 
 				let body = document.createElement("div")
@@ -85,7 +90,7 @@ function obtainAndPopulate(request, cardHolder) {
 
 				let text = document.createElement("div")
 				text.className = "card-text text-capitalize text-center"
-				text.innerHTML = result.fields.value.split(",")
+				text.innerHTML = result.fields.value.split(",").join(", ")
 				body.appendChild(text)
 
 				let date = new Date(Date.parse(result.dob.value));
@@ -103,8 +108,17 @@ function obtainAndPopulate(request, cardHolder) {
 	})
 }
 
-// performs a HEAD request on a link and determines if it is broken (returns 404)
-function isBroken(ids) {
+function extractName(person) {
+	let given = person?.given?.value
+	let family = person?.family?.value
+	if (given === undefined || family === undefined) {
+		return person.mathematicianLabel.value
+	} else {
+		return given + " " + family
+	}
+}
+
+function isBroken(url) {
 	let l = `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${ids.join('|')}&props=sitelinks/urls&sitefilter=enwiki`;
 	fetch(link, {
 		method: "GET",
