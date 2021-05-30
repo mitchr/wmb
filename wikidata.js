@@ -100,10 +100,15 @@ function constructCard(result) {
 	body.appendChild(text);
 	card.appendChild(body);
 
-	let date = new Date(result.dob.value);
+	let dateStr = result.dob.value.slice(0, 10)
+	let year = parseInt(dateStr.slice(0, 4));
+	let month = parseInt(dateStr.slice(5, 7)) - 1;
+	let day = parseInt(dateStr.slice(8, 10));
+	let date = new Date(year, month, day)
+
 	let birthday = document.createElement("div");
 	birthday.className = "card-footer text-center";
-	birthday.innerHTML = date.getUTCMonth() + 1 + '-' + date.getUTCDate() + '-' + date.getFullYear();
+	birthday.innerHTML = new Intl.DateTimeFormat([]).format(date);
 	card.appendChild(birthday);
 
 	col.appendChild(card);
