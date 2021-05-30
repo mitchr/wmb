@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded", event => {
 			OPTIONAL { ?mathematician wdt:P18 ?i. }
 			OPTIONAL { ?mathematician wdt:P735 ?given. }
 			OPTIONAL { ?mathematician wdt:P734 ?family. }
-			FILTER((${date.getMonth() + 1}  = (MONTH(?dob))) && (${date.getDate() + 1}  = (DAY(?dob))))
+			FILTER((${date.getUTCMonth() + 1} = (MONTH(?dob))) && (${date.getUTCDate()} = (DAY(?dob))))
 			SERVICE wikibase:label {
 				bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en".
 				?mathematician rdfs:label ?mathematicianLabel.
@@ -103,7 +103,7 @@ function constructCard(result) {
 	let date = new Date(result.dob.value);
 	let birthday = document.createElement("div");
 	birthday.className = "card-footer text-center";
-	birthday.innerHTML = date.getMonth() + 1 + '-' + date.getUTCDate() + '-' + date.getFullYear();
+	birthday.innerHTML = date.getUTCMonth() + 1 + '-' + date.getUTCDate() + '-' + date.getFullYear();
 	card.appendChild(birthday);
 
 	col.appendChild(card);
