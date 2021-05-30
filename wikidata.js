@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded", event => {
 			OPTIONAL { ?mathematician wdt:P18 ?i. }
 			OPTIONAL { ?mathematician wdt:P735 ?given. }
 			OPTIONAL { ?mathematician wdt:P734 ?family. }
-			FILTER((${date.getUTCMonth() + 1} = (MONTH(?dob))) && (${date.getUTCDate()} = (DAY(?dob))))
+			FILTER((${date.getUTCMonth() + 1} = MONTH(?dob)) && (${date.getUTCDate()} = DAY(?dob)))
 			SERVICE wikibase:label {
 				bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en".
 				?mathematician rdfs:label ?mathematicianLabel.
