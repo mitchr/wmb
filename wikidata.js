@@ -30,7 +30,7 @@ document.addEventListener("DOMContentLoaded", event => {
 		GROUP BY ?mathematician ?mathematicianLabel ?dob ?img
 		ORDER BY (?dob)`
 
-		let encoded = encodeURI(query).replace(/%7B/gi, "{").replace(/%7D/gi, "}").replace(/&/gi, "%26");
+		let encoded = encodeURIComponent(query)
 
 		let requestSPARQL = new Request(`https://query.wikidata.org/sparql?format=json&query=${encoded}`, { method: "GET", });
 
